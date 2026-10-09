@@ -64,9 +64,9 @@ public class Main {
 
     public static void main(String[] args) {
         int choice = 0;
+        printMenu();
 
         do {
-            printMenu();
             System.out.print("Enter your choice: ");
 
             String input = sc.nextLine().trim();
@@ -77,56 +77,67 @@ public class Main {
             try {
                 choice = Integer.parseInt(input);
             } catch (NumberFormatException e) {
-                System.out.println("Invalid input! Please enter a number between 1 and 12.");
+                System.out.println("Invalid input! Please enter a number between 1 and 12.\n");
                 continue;
             }
 
             switch (choice) {
                 case 1:
                     viewEvents();
+                    System.out.println();
                     break;
                 case 2:
                     registerParticipant();
+                    System.out.println();
                     break;
                 case 3:
                     searchEvent();
+                    System.out.println();
                     break;
                 case 4:
                     correctName();
+                    System.out.println();
                     break;
                 case 5:
                     scheduleActivities();
+                    System.out.println();
                     break;
                 case 6:
                     allocateVenue();
+                    System.out.println();
                     break;
                 case 7:
                     assignVolunteer();
+                    System.out.println();
                     break;
                 case 8:
                     analyzeData();
+                    System.out.println();
                     break;
                 case 9:
                     manageVenues();
+                    System.out.println();
                     break;
                 case 10:
                     manageActivities();
+                    System.out.println();
                     break;
                 case 11:
                     viewRegistrations();
+                    System.out.println();
                     break;
                 case 12:
                     System.out.println("Exiting EventFlow. Thank you!");
                     break;
                 default:
-                    System.out.println("Invalid choice! Please choose between 1 and 12.");
+                    System.out.println("Invalid choice! Please choose between 1 and 12.\n");
             }
 
         } while (choice != 12);
     }
 
     private static void printMenu() {
-        System.out.println("\n========================================");
+        System.out.println("========================================");
         System.out.println("     EVENTFLOW MANAGEMENT PLATFORM");
         System.out.println("========================================");
         System.out.println();

@@ -79,6 +79,26 @@ public class EventKeywordAhoCorasick {
         }
     }
 
+    public List<String> findMatches(String text) {
+        List<String> results = new ArrayList<>();
+        Node current = root;
+
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+
+            while (current != root && !current.children.containsKey(ch)) {
+                current = current.failure;
+            }
+
+            if (current.children.containsKey(ch)) {
+                current = current.children.get(ch);
+            }
+
+            results.addAll(current.words);
+        }
+        return results;
+    }
+
     public static void main(String[] args) {
         EventKeywordAhoCorasick ac =
                 new EventKeywordAhoCorasick();

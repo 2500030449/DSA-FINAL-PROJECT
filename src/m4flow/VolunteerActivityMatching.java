@@ -3,7 +3,7 @@ import java.util.*;
 
 public class VolunteerActivityMatching {
 
-    static boolean assign(int volunteer, boolean[][] eligible,
+    public static boolean assign(int volunteer, boolean[][] eligible,
                           boolean[] visited, int[] activityOwner) {
 
         for (int activity = 0;
@@ -23,6 +23,19 @@ public class VolunteerActivityMatching {
         }
 
         return false;
+    }
+
+    public static int[] matchVolunteers(boolean[][] eligible) {
+        int volunteers = eligible.length;
+        int activities = eligible[0].length;
+        int[] activityOwner = new int[activities];
+        Arrays.fill(activityOwner, -1);
+
+        for (int v = 0; v < volunteers; v++) {
+            boolean[] visited = new boolean[activities];
+            assign(v, eligible, visited, activityOwner);
+        }
+        return activityOwner;
     }
 
     public static void main(String[] args) {

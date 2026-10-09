@@ -36,6 +36,21 @@ public class AssignmentConflictKonig {
         }
     }
 
+    public static int computeMinVertexCover(boolean[][] eligible) {
+        int volunteers = eligible.length;
+        int activities = eligible[0].length;
+        int[] owner = new int[activities];
+        Arrays.fill(owner, -1);
+
+        int matching = 0;
+        for (int v = 0; v < volunteers; v++) {
+            if (match(v, eligible, new boolean[activities], owner)) {
+                matching++;
+            }
+        }
+        return matching;
+    }
+
     public static void main(String[] args) {
         boolean[][] eligible = {
             {true, true, false},

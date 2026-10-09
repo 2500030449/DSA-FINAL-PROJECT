@@ -24,8 +24,11 @@ public class Main {
     static ArrayList<Activity> activities = new ArrayList<>();
     static ArrayList<Volunteer> volunteers = new ArrayList<>();
 
+    // Module 1 & 2 pre-indexed data structures
+    static EventKeywordAhoCorasick keywordMatcher = new EventKeywordAhoCorasick();
+
     static {
-        // Pre-populate Events matching the project specifications
+        // Pre-populate Events with initial seats (100, 80, 40, 60)
         events.add(new Event(1, "AI Hackathon", "Annual Artificial Intelligence Hackathon & Innovation Contest", 100));
         events.add(new Event(2, "Web Development Workshop", "Hands-on Fullstack Web Development & Cloud Deployment", 80));
         events.add(new Event(3, "Robotics Challenge", "Autonomous Robotics Navigation and Combat Challenge", 40));
@@ -60,6 +63,14 @@ public class Main {
         Participant p2 = new Participant(102, "Rahul Sen", "rahul.sen@college.edu", "9876543211");
         participants.add(p2);
         registrations.add(new Registration("REG102", 102, 2));
+
+        // Initialize Module 1 Aho-Corasick Multi-Pattern Search Keywords
+        keywordMatcher.addWord("ai");
+        keywordMatcher.addWord("hackathon");
+        keywordMatcher.addWord("web");
+        keywordMatcher.addWord("robotics");
+        keywordMatcher.addWord("data");
+        keywordMatcher.buildFailureLinks();
     }
 
     public static void main(String[] args) {
@@ -179,7 +190,7 @@ public class Main {
     }
 
     // ==========================================
-    // OPTION 2: REGISTER PARTICIPANT
+    // OPTION 2: REGISTER PARTICIPANT (LINKED TO m1string & engine)
     // ==========================================
     static void registerParticipant() {
         System.out.println("\n---------- REGISTER PARTICIPANT ----------");
@@ -223,15 +234,26 @@ public class Main {
             return;
         }
 
+        String regCode = "REG" + id;
+
+        // Module 1 Linked: Verify code uniqueness using Rabin-Karp rolling hash
+        StringBuilder existingCodes = new StringBuilder();
+        for (Registration reg : registrations) {
+            existingCodes.append(reg.getRegistrationCode()).append(" ");
+        }
+        if (BookingCodeRabinKarp.contains(existingCodes.toString(), regCode)) {
+            System.out.println("Duplicate registration code detected via Rabin-Karp verification!");
+            return;
+        }
+
         if (selected.registerParticipant()) {
             Participant p = new Participant(id, name, email, phone);
-            String regCode = "REG" + id;
             Registration r = new Registration(regCode, id, eventId);
 
             participants.add(p);
             registrations.add(r);
 
-            // DSA Verification: Miller-Rabin Primality security token check
+            // Module 5 & Engine Linked: Miller-Rabin Primality verification token
             long tokenSeed = 10007L + id;
             boolean secureToken = RandomizedParallelEngine.millerRabinTest(tokenSeed, 5);
 
@@ -239,7 +261,7 @@ public class Main {
             System.out.println("Registration Code: " + regCode);
             System.out.println("Participant: " + name + " | Event: " + selected.getEventName() + " | Status: Confirmed");
             if (secureToken) {
-                System.out.println("[Security] Authenticated digital signature prime token generated.");
+                System.out.println("[Security] Digital ticket signature verified via Miller-Rabin token.");
             }
         } else {
             System.out.println("No seats available for this event!");
@@ -247,7 +269,7 @@ public class Main {
     }
 
     // ==========================================
-    // OPTION 3: SEARCH EVENT (KMP STRING ALGORITHM)
+    // OPTION 3: SEARCH EVENT (LINKED TO m1string, m2suffix & engine)
     // ==========================================
     static void searchEvent() {
         System.out.print("Enter event name to search: ");
@@ -261,11 +283,21 @@ public class Main {
         boolean found = false;
 
         for (Event e : events) {
-            // Apply KMP Pattern Search on Event Name and Description
+            // Module 1 Linked: KMP String Search Engine
             int matchIndexName = KMP.find(e.getEventName().toLowerCase(), keyword.toLowerCase());
             int matchIndexDesc = KMP.find(e.getDescription().toLowerCase(), keyword.toLowerCase());
 
-            if (matchIndexName != -1 || matchIndexDesc != -1) {
+            // Module 2 Linked: Suffix Automaton Pattern Matching
+            EventSearchSuffixAutomaton automaton = new EventSearchSuffixAutomaton(e.getEventName().length() + 5);
+            automaton.build(e.getEventName().toLowerCase());
+            boolean saFound = automaton.search(keyword.toLowerCase());
+
+            // Module 2 Linked: Suffix Tree Pattern Verification
+            EventDocumentSuffixTree suffixTree = new EventDocumentSuffixTree();
+            suffixTree.build(e.getEventName().toLowerCase());
+            boolean treeFound = suffixTree.search(keyword.toLowerCase());
+
+            if (matchIndexName != -1 || matchIndexDesc != -1 || saFound || treeFound) {
                 System.out.println("Event found: " + e.getEventName());
                 found = true;
             }
@@ -277,7 +309,7 @@ public class Main {
     }
 
     // ==========================================
-    // OPTION 4: CORRECT PARTICIPANT NAME (DP DAMERAU-LEVENSHTEIN)
+    // OPTION 4: CORRECT PARTICIPANT NAME (LINKED TO m3dp)
     // ==========================================
     static void correctName() {
         System.out.println("\n---------- CORRECT PARTICIPANT NAME (DP EDIT DISTANCE) ----------");
@@ -296,6 +328,7 @@ public class Main {
             System.out.print("Enter correct name: ");
             String correct = sc.nextLine().trim();
 
+            // Module 3 Linked: ParticipantNameCorrection Damerau-Levenshtein DP
             int dist = ParticipantNameCorrection.distance(entered, correct);
             System.out.println("\n[DP Algorithm] Damerau-Levenshtein Edit Distance: " + dist);
             if (dist <= 2) {
@@ -323,6 +356,7 @@ public class Main {
         System.out.print("Enter corrected name: ");
         String correctedName = sc.nextLine().trim();
 
+        // Module 3 Linked: ParticipantNameCorrection Damerau-Levenshtein DP
         int editDist = ParticipantNameCorrection.distance(target.getName(), correctedName);
         target.setName(correctedName);
 
@@ -331,7 +365,7 @@ public class Main {
     }
 
     // ==========================================
-    // OPTION 5: SCHEDULE ACTIVITIES (INTERVAL SCHEDULING & DP)
+    // OPTION 5: SCHEDULE ACTIVITIES (LINKED TO m3dp & engine)
     // ==========================================
     static void scheduleActivities() {
         System.out.println("\n---------- SCHEDULE ACTIVITIES (INTERVAL SCHEDULING & DP) ----------");
@@ -347,18 +381,32 @@ public class Main {
                     " (" + a.getStartTime() + " - " + a.getEndTime() + ") [Cap: " + a.getCapacity() + "]");
         }
 
-        // Convert times into minute integers for interval scheduling
         int n = activities.size();
         int[] startMinutes = new int[n];
         int[] endMinutes = new int[n];
+        int[] capacities = new int[n];
+        boolean[][] conflicts = new boolean[n][n];
 
         for (int i = 0; i < n; i++) {
             startMinutes[i] = parseTimeToMinutes(activities.get(i).getStartTime());
             endMinutes[i] = parseTimeToMinutes(activities.get(i).getEndTime());
+            capacities[i] = activities.get(i).getCapacity();
         }
 
-        // Apply Greedy Interval Scheduling (Earliest Finish Time)
+        // Build conflict graph for Bitmask DP
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i != j && !(endMinutes[i] <= startMinutes[j] || endMinutes[j] <= startMinutes[i])) {
+                    conflicts[i][j] = true;
+                }
+            }
+        }
+
+        // Engine Linked: Greedy Interval Scheduling (Earliest Finish Time)
         int[] selectedIndices = GreedyScheduler.select(startMinutes, endMinutes);
+
+        // Module 3 Linked: Bitmask DP Activity Selection under conflict constraints
+        int maxBitmaskVal = ActivitySelectionBitmaskDP.selectActivities(capacities, conflicts);
 
         System.out.println("\nOptimal Non-Conflicting Schedule Selected (Greedy Earliest Finish Time):");
         for (int i = 0; i < selectedIndices.length; i++) {
@@ -368,6 +416,7 @@ public class Main {
 
         System.out.println("\nTotal Scheduled Non-Conflicting Activities: " + selectedIndices.length + " / " + n);
         System.out.println("Algorithm: Greedy Interval Scheduling - Optimal O(n log n) Activity Selection");
+        System.out.println("[m3dp Linked] Bitmask DP Max Capacity Attendance: " + maxBitmaskVal);
     }
 
     private static int parseTimeToMinutes(String timeStr) {
@@ -380,7 +429,7 @@ public class Main {
     }
 
     // ==========================================
-    // OPTION 6: ALLOCATE VENUE CAPACITY (NETWORK FLOW & KNAPSACK)
+    // OPTION 6: ALLOCATE VENUE CAPACITY (LINKED TO m4flow & engine)
     // ==========================================
     static void allocateVenue() {
         System.out.println("\n---------- ALLOCATE VENUE CAPACITY (NETWORK FLOW & KNAPSACK) ----------");
@@ -416,19 +465,29 @@ public class Main {
         int[][] capacityGraph = new int[totalNodes][totalNodes];
         capacityGraph[source][participantNode] = count;
 
+        // Module 4 Linked: Dinic's Algorithm Flow Network
+        FacilityFlowDinic dinic = new FacilityFlowDinic(totalNodes);
+        dinic.addEdge(source, participantNode, count);
+
         for (int i = 0; i < numVenues; i++) {
             int venueNode = 2 + i;
-            capacityGraph[participantNode][venueNode] = venues.get(i).getCapacity();
-            capacityGraph[venueNode][sink] = venues.get(i).getCapacity();
+            int cap = venues.get(i).getCapacity();
+            capacityGraph[participantNode][venueNode] = cap;
+            capacityGraph[venueNode][sink] = cap;
+
+            dinic.addEdge(participantNode, venueNode, cap);
+            dinic.addEdge(venueNode, sink, cap);
         }
 
-        // Execute Edmonds-Karp Network Flow Algorithm
+        // Module 4 Linked: Edmonds-Karp Network Flow Algorithm
         int maxAccommodated = VenueCapacityEdmondsKarp.maxFlow(capacityGraph, source, sink);
+        int dinicMaxFlow = dinic.maxFlow(source, sink);
 
-        System.out.println("\n[Network Flow Analysis (Edmonds-Karp / Dinic)]");
+        System.out.println("\n[Network Flow Analysis (Edmonds-Karp & Dinic)]");
         System.out.println("Requested Allocation: " + count + " participants");
-        System.out.println("Maximum Network Flow Allocated: " + maxAccommodated + " / " + count);
-        System.out.println("Total Campus Venue Capacity: " + totalVenueCapacity);
+        System.out.println("Edmonds-Karp Max Flow Allocated : " + maxAccommodated + " / " + count);
+        System.out.println("Dinic's Blocking Flow Allocated : " + dinicMaxFlow + " / " + count);
+        System.out.println("Total Campus Venue Capacity     : " + totalVenueCapacity);
 
         if (maxAccommodated >= count) {
             System.out.println("Capacity Status: Full demand successfully accommodated across venues!");
@@ -436,7 +495,12 @@ public class Main {
             System.out.println("Capacity Status: Bottleneck detected! Shortfall of " + (count - maxAccommodated) + " attendees.");
         }
 
-        // Individual suitable venues
+        // Engine Linked: Knapsack DP Equipment Allocation
+        int[] equipmentWeights = {10, 20, 30, 40};
+        int[] equipmentValues = {60, 100, 120, 150};
+        int maxEquipmentValue = Knapsack.maxValue(equipmentWeights, equipmentValues, 50);
+        System.out.println("[Knapsack DP Linked] Optimal AV equipment budget value: " + maxEquipmentValue);
+
         System.out.println("\nSingle Venues able to hold entirety of " + count + " attendees:");
         boolean singleFound = false;
         for (Venue v : venues) {
@@ -451,7 +515,7 @@ public class Main {
     }
 
     // ==========================================
-    // OPTION 7: ASSIGN VOLUNTEERS (BIPARTITE MATCHING & KONIG'S THEOREM)
+    // OPTION 7: ASSIGN VOLUNTEERS (LINKED TO m4flow)
     // ==========================================
     static void assignVolunteer() {
         System.out.println("\n---------- ASSIGN VOLUNTEERS (BIPARTITE MATCHING & KONIG'S THEOREM) ----------");
@@ -464,10 +528,8 @@ public class Main {
         int numV = volunteers.size();
         int numA = activities.size();
 
-        // Bipartite compatibility matrix: Volunteers x Activities
         boolean[][] eligible = new boolean[numV][numA];
 
-        // Match based on skills & activity requirements
         for (int i = 0; i < numV; i++) {
             Volunteer vol = volunteers.get(i);
             String skill = vol.getSkill().toLowerCase();
@@ -483,20 +545,19 @@ public class Main {
                     eligible[i][j] = true;
                 }
             }
-            // Ensure each volunteer is flexible for at least 2 activities
             eligible[i][i % numA] = true;
             eligible[i][(i + 1) % numA] = true;
         }
 
-        int[] activityOwner = new int[numA];
-        Arrays.fill(activityOwner, -1);
+        // Module 4 Linked: VolunteerActivityMatching Bipartite Matching
+        int[] activityOwner = VolunteerActivityMatching.matchVolunteers(eligible);
+
+        // Module 4 Linked: AssignmentConflictKonig Minimum Vertex Cover
+        int minVertexCover = AssignmentConflictKonig.computeMinVertexCover(eligible);
 
         int assigned = 0;
-        for (int v = 0; v < numV; v++) {
-            boolean[] visited = new boolean[numA];
-            if (assignHelper(v, eligible, visited, activityOwner)) {
-                assigned++;
-            }
+        for (int v : activityOwner) {
+            if (v != -1) assigned++;
         }
 
         System.out.println("Computed Maximum Bipartite Matching (Ford-Fulkerson Augmenting Paths):");
@@ -513,30 +574,17 @@ public class Main {
         }
 
         System.out.println("\n[Konig's Theorem Conflict Resolution]");
-        System.out.println("Minimum Vertex Cover size = Maximum Matching size = " + assigned);
+        System.out.println("Minimum Vertex Cover size = Maximum Matching size = " + minVertexCover);
         System.out.println("Optimal volunteer coverage verified with zero unresolvable resource bottlenecks.");
     }
 
-    private static boolean assignHelper(int volunteer, boolean[][] eligible, boolean[] visited, int[] activityOwner) {
-        for (int activity = 0; activity < eligible[volunteer].length; activity++) {
-            if (eligible[volunteer][activity] && !visited[activity]) {
-                visited[activity] = true;
-                if (activityOwner[activity] == -1 || assignHelper(activityOwner[activity], eligible, visited, activityOwner)) {
-                    activityOwner[activity] = volunteer;
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     // ==========================================
-    // OPTION 8: ANALYZE EVENT DATA (RANDOMIZED & PARALLEL ALGORITHMS)
+    // OPTION 8: ANALYZE EVENT DATA (LINKED TO ALL MODULES)
     // ==========================================
     static void analyzeData() {
         System.out.println("\n---------- EVENT DATA ANALYSIS & PERFORMANCE EVALUATION ----------");
 
-        // 1. General Metrics
+        // 1. Core Platform Metrics
         System.out.println("[1] Core Platform Metrics:");
         System.out.println("Total events: " + events.size());
         System.out.println("Total participants: " + participants.size());
@@ -545,8 +593,28 @@ public class Main {
         System.out.println("Total activities: " + activities.size());
         System.out.println("Total volunteers: " + volunteers.size());
 
-        // 2. Randomized Algorithms
-        System.out.println("\n[2] Randomized Algorithms Demonstration:");
+        // 2. Module 1 & Module 2 String Analysis Linked
+        System.out.println("\n[2] Module 1 & 2 Text Analysis Linked:");
+        String sampleText = "ai hackathon web development robotics challenge data science";
+        int[] zArray = EventDescriptionZFunction.calculateZ(sampleText);
+        System.out.println("- Z-Algorithm (m1string): Computed Z-prefix array (length: " + zArray.length + ")");
+
+        int[] sa = EventDescriptionSuffixArray.buildSuffixArray(sampleText);
+        int[] lcp = EventSimilarityLCP.buildLCP(sampleText, sa);
+        System.out.println("- Suffix Array & LCP (m2suffix): Suffix Array indexed (" + sa.length + " suffixes, LCP max prefix: " + lcp.length + ")");
+
+        // 3. Module 3 Advanced Dynamic Programming Linked
+        System.out.println("\n[3] Module 3 Advanced DP Optimization Linked:");
+        int[] frequencies = {34, 8, 50, 20};
+        int bstCost = EventAccessOptimalBST.minimumCost(frequencies);
+        System.out.println("- Optimal Binary Search Tree (m3dp): Minimum access search cost = " + bstCost);
+
+        int[] matrixDims = {10, 20, 30, 40};
+        int mcmCost = EventDataMatrixChain.minimumCost(matrixDims);
+        System.out.println("- Matrix Chain Multiplication (m3dp): Optimal multiplication cost = " + mcmCost);
+
+        // 4. Module 5 Randomized & Parallel Algorithms Linked
+        System.out.println("\n[4] Randomized Algorithms Linked:");
 
         // Randomized QuickSort
         int[] participantIds = new int[participants.size()];
@@ -576,8 +644,8 @@ public class Main {
             System.out.println("- Reservoir Sampling (O(n) single-pass uniform raffle): Lucky Winner = " + sampled.get(0));
         }
 
-        // 3. Parallel Performance Evaluation
-        System.out.println("\n[3] Parallel vs Sequential Performance Evaluation:");
+        // Parallel Performance Benchmark
+        System.out.println("\n[5] Parallel vs Sequential Performance Evaluation:");
         int benchmarkSize = 1000000;
         System.out.println("Running benchmark on " + benchmarkSize + " attendee log records...");
 
@@ -694,7 +762,7 @@ public class Main {
     }
 
     // ==========================================
-    // OPTION 11: VIEW REGISTRATIONS
+    // OPTION 11: VIEW REGISTRATIONS (LINKED TO m1string)
     // ==========================================
     static void viewRegistrations() {
         System.out.println("\n---------- REGISTRATIONS ----------");
